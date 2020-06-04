@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+
+### INPUT: KUBECTL CONTEXT ###
+! hash kubectl && echo 'kubectl is required' && exit 1 >&2
+! hash jq && echo 'jq is required' && exit 1 >&2
+: "${K3S_CONTEXT:?Please provide as first argument the kubectl context used to connect to the k8s you want to add the user to}"
+
+k() {
+  kubectl --context="$K3S_CONTEXT" "$@"
+}
+
+k version &>/dev/null || {
+  echo 'The specified K3S_CONTEXT is not valid' >&2
+  exit 1
+}
+
+### INPUT: USER NAME & CSR FILE ###
+: "${1:?Please provide the file path to the CSR createed by the user}"
+[ ! -f "$1" ] && echo Please provide a valid CSR file as argument >&2 && exit 1
+
+csr_file=$1
+user=${1##*/}
+user=${user%.*}
+
+### CREATE CSR IN K8S ###
+
+csr_yaml() {
+  cat <<EOF
+apiVersion: certificates.k8s.io/v1beta1
+kind: CertificateSigningRequest
+metadata:
+  name: "${user}-csr"
+spec:
+  groups:
+    - system:authenticated
+  request: $(base64 <"$csr_file" | tr -d '\n')
+  usages:
+    - digital signature
+    - key encipherment
+    - server auth
+    - client auth
+EOF
+}
+
+k apply -f <(csr_yaml)
+
+### APPROVE CSR IN K8S ###
+
+k certificate approve "${user}-csr"
+
+### CREATE NAMESPACE FOR USER ###
+
+k create ns "${user}"
+
+### CREATE ROLE & ROLE BINDING ###
+
+role_binding() {
+  cat <<EOF
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: ${user}
+  name: ${user}
+rules:
+  - apiGroups: ["", "extensions", "apps"]
+    resources: ["*"]
+    verbs: ["*"]
+  - apiGroups: ["batch"]
+    resources:
+    - jobs
+    - cronjobs
+    verbs: ["*"]
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: ${user}
+  namespace: ${user}
+subjects:
+  - kind: User
+    name: ${user}
+    namespace: ${user}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ${user}
+EOF
+}
+
+k --namespace="${user}" apply -f <(role_binding)
+
+### CREATE KUBECONFIG FOR USER ###
+
+current_context=$(k config view --raw -o json | jq -r '.clusters[] | select(.name == "'"${K3S_CONTEXT}"'")')
+
+cat >"k3os-${user}".kubeconfig.yaml <<EOF
+apiVersion: v1
+kind: Config
+clusters:
+  - cluster:
+      certificate-authority-data: $(jq '.cluster."certificate-authority-data"' <<<"$current_context")
+      server: $(jq '.cluster."server"' <<<"$current_context")
+    name: k3os-${user}
+users:
+  - name: ${user}
+    user:
+      client-certificate-data: $(k get csr "${user}-csr" -o jsonpath='{.status.certificate}')
+contexts:
+  - context:
+      cluster: k3os-${user}
+      user: ${user}
+    name: k3os-${user}
+EOF

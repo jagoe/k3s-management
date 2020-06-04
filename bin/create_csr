@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+! hash openssl && echo 'openssl is required' >&2
+: "${K8S_USER:?Please provide the user name you want to use in k8s}"
+
+csr() {
+  cat <<EOF
+[req]
+default_bits=2048
+prompt=no
+default_md=sha256
+distinguished_name=dn
+[dn]
+CN=${K8S_USER}
+O=k3os
+[v3_ext]
+authorityKeyIdentifier=keyid,issuer:always
+basicConstraints=CA:FALSE
+keyUsage=keyEncipherment,dataEncipherment
+extendedKeyUsage=serverAuth,clientAuth
+EOF
+}
+
+openssl genrsa -out "${K8S_USER}.key" 4096
+openssl req -config <(csr) -new -key "${K8S_USER}.key" -nodes -out "${K8S_USER}.csr"

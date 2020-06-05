@@ -1,5 +1,10 @@
 # Create a k8s user with full access to their own namespace
 
+Here you can find a manual and some command-line tools to create a user with their own namespace in k8s.
+
+The proper method would be to [use a client certificate](#using-a-client-certificate), but since that doesn't work on my setup I've also
+included tooling to leverage [service accounts]((#using-a-service-account)) for the same purpose.
+
 * [Create a k8s user with full access to their own namespace](#create-a-k8s-user-with-full-access-to-their-own-namespace)
   * [Using a client certificate](#using-a-client-certificate)
     * [User](#user)

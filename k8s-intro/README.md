@@ -63,8 +63,7 @@ database app, we would instead expose port `5432` (or whatever custom port we sp
 An ingress represents a public network interface for your application. By leveraging the simple ingress interface
 implemented by popular services such as NGINX or Traefik, it is very easy to configure one or several public domains
 for any amount of applications.\
-In theory, you could set up one ingress for your namespace for all applications you run there, but it would be cleaner
-to create a separate ingress for each.
+Due to IP address shortage, you should set up one ingess for your namespace and redirect to your separate apps from there.
 
 Setting up TLS for your application is also easily done by adding annotations used by cert-manager to automatically
 request an LE certificate for your public endpoint.

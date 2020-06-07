@@ -1,0 +1,16 @@
+version: "3.8"
+services:
+  backend:
+    build:
+      context: "./apps/backend"
+    command: ["./todos"]
+    volumes:
+      - type: bind
+        source: ./apps/backend/storage
+        target: /storage
+
+  frontend:
+    build:
+      context: "./apps/frontend"
+    ports:
+      - "${PORT-8000}:80"

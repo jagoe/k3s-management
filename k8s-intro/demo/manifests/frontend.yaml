@@ -1,0 +1,44 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: jagoe
+  labels:
+    app: frontend
+spec:
+  selector:
+    matchLabels:
+      app: frontend
+  replicas: 1
+  template:
+    metadata:
+      namespace: jagoe
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: jagoe/k3s-demo-frontend
+          ports:
+            - containerPort: 80
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+      imagePullSecrets:
+        - name: regcred
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: jagoe
+  labels:
+    app: frontend
+spec:
+  ports:
+    - port: 80
+      protocol: TCP
+  selector:
+    app: frontend

@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: demo
+  namespace: jagoe
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    cert-manager.io/acme-challenge-type: http01
+    traefik.ingress.kubernetes.io/redirect-entry-point: https
+spec:
+  rules:
+    - host: demo.k3.infinite-turtles.dev
+      http:
+        paths:
+          - backend:
+              serviceName: frontend
+              servicePort: 80
+  tls:
+    - hosts:
+        - demo.k3.infinite-turtles.dev
+      secretName: k3-demo-tls

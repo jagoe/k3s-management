@@ -1,0 +1,51 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: jagoe
+  labels:
+    app: backend
+spec:
+  selector:
+    matchLabels:
+      app: backend
+  replicas: 1
+  template:
+    metadata:
+      namespace: jagoe
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: jagoe/k3s-demo-backend
+          ports:
+            - containerPort: 80
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          volumeMounts:
+            - name: storage
+              mountPath: /storage
+      imagePullSecrets:
+        - name: regcred
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: demo-todos
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: jagoe
+  labels:
+    app: backend
+spec:
+  ports:
+    - port: 80
+      protocol: TCP
+  selector:
+    app: backend

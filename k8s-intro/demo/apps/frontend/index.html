@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Todos</title>
+</head>
+
+<body>
+  <form id="form">
+    <input id="todo-text" type="text" placeholder="Text" /> <button type="submit">Add</button>
+  </form>
+
+  <button id="refresh">Refresh</button>
+  <ul id="todos"></ul>
+
+  <script>
+    const backendUrl = '/todos'
+
+    const formElement = document.getElementById('form')
+    const textElement = document.getElementById('todo-text')
+    const refreshElement = document.getElementById('refresh')
+    const todosElement = document.getElementById('todos')
+
+    formElement.addEventListener('submit', add)
+    refresh.addEventListener('click', loadTodos)
+
+    function add(e) {
+      e.preventDefault()
+
+      const text = textElement.value
+      if (!text) return
+
+      fetch(backendUrl, {
+        body: text,
+        method: 'post',
+      })
+        .then(response => response.json())
+        .then(fillList)
+    }
+
+    function loadTodos() {
+      fetch(backendUrl)
+        .then(response => response.json())
+        .then(fillList)
+    }
+
+    function fillList(todos) {
+      const lis = []
+
+      for (const todo of todos) {
+        const li = document.createElement('li')
+
+        const checkbox = document.createElement('input')
+        checkbox.type = 'checkbox'
+        checkbox.checked = todo.done
+        checkbox.addEventListener('change', () => changeState(todo.id, checkbox.checked))
+        li.appendChild(checkbox)
+
+        const text = document.createElement('span')
+        text.textContent = ` ${todo.text} `
+        li.appendChild(text)
+
+        const button = document.createElement('button')
+        button.textContent = '×'
+        button.addEventListener('click', () => remove(todo.id))
+        li.appendChild(button)
+
+        lis.push(li)
+      }
+
+      todosElement.innerHTML = ''
+      lis.forEach(li => todosElement.appendChild(li))
+    }
+
+    function remove(id) {
+      fetch(backendUrl, {
+        body: id,
+        method: 'delete',
+      })
+        .then(response => response.json())
+        .then(fillList)
+    }
+
+    function changeState(id, state) {
+      fetch(backendUrl, {
+        body: `${id}:${state ? 'done' : 'open'}`,
+        method: 'put',
+      })
+        .then(response => response.json())
+        .then(fillList)
+    }
+
+    loadTodos()
+  </script>
+
+  <style>
+    input[type=checkbox]:checked+span {
+      text-decoration: line-through;
+    }
+  </style>
+</body>
+
+</html>

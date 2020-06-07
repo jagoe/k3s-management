@@ -12,7 +12,7 @@ default_md=sha256
 distinguished_name=dn
 [dn]
 CN=${K8S_USER}
-O=k3os
+O=k3s
 [v3_ext]
 authorityKeyIdentifier=keyid,issuer:always
 basicConstraints=CA:FALSE

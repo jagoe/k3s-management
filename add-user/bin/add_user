@@ -62,7 +62,7 @@ metadata:
   namespace: ${user}
   name: ${user}
 rules:
-  - apiGroups: ["", "extensions", "apps"]
+  - apiGroups: ["", "extensions", "apps", "networking.k8s.io", "cert-manager.io"]
     resources: ["*"]
     verbs: ["*"]
   - apiGroups: ["batch"]
@@ -116,21 +116,21 @@ k --namespace="${user}" apply -f <(role_binding)
 
 current_context=$(k config view --raw -o json | jq -r '.clusters[] | select(.name == "'"${K3S_CONTEXT}"'")')
 
-cat >"k3os-${user}".kubeconfig.yaml <<EOF
+cat >"k3-${user}".kubeconfig.yaml <<EOF
 apiVersion: v1
 kind: Config
 clusters:
   - cluster:
       certificate-authority-data: $(jq '.cluster."certificate-authority-data"' <<<"$current_context")
       server: $(jq '.cluster."server"' <<<"$current_context")
-    name: k3os-${user}
+    name: k3-${user}
 users:
-  - name: ${user}
+  - name: k3-${user}
     user:
       client-certificate-data: $(k get csr "${user}-csr" -o jsonpath='{.status.certificate}')
 contexts:
   - context:
-      cluster: k3os-${user}
-      user: ${user}
-    name: k3os-${user}
+      cluster: k3-${user}
+      user: k3-${user}
+    name: k3-${user}
 EOF
